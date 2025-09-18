@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIY MPI Cluster Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The application is designed as a linear, multi-step tutorial. A fixed sidebar lists all major steps, acting as a progress indicator and navigation menu. The main content area displays the detailed instructions, code snippets, and diagrams for the currently selected step. This structure is chosen because building a cluster is a sequential process; it guides the user logically from one prerequisite to the next, preventing them from getting lost. Key interactions include clicking steps to navigate, one-click copy buttons for commands to reduce typing errors, and a visual network diagram to clarify the physical setup. -->
+    <!-- Visualization & Content Choices: Report Info (Cluster setup steps) -> Goal (Guide the user) -> Viz/Presentation (Sequential text, code blocks, HTML/CSS diagram) -> Interaction (Click navigation, copy buttons) -> Justification (Provides a clear, error-resistant path for a complex technical task. The network diagram (Goal: Organize) is rendered with HTML/CSS divs to avoid SVG and visually explain the core architecture. Code blocks (Goal: Inform) are used for clarity and accuracy, with copy buttons to simplify execution. No charts are needed for this type of instructional report. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        .sidebar-item.active {
+            background-color: #EAE6E1;
+            color: #A37F5D;
+            font-weight: 700;
+        }
+        .code-block {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            position: relative;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #4a5568;
+            color: #e2e8f0;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .copy-btn:hover {
+            background-color: #718096;
+        }
+        .step-content h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #A37F5D;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #EAE6E1;
+        }
+        .step-content p, .step-content ul {
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+        .step-content li {
+            margin-left: 1.5rem;
+            list-style-type: disc;
+        }
+        .step-content strong {
+            color: #8A6D52;
+        }
+        .step-content .note {
+            background-color: #F3F0EC;
+            border-left: 4px solid #A37F5D;
+            padding: 1rem;
+            border-radius: 0.25rem;
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <aside class="w-1/4 lg:w-1/5 xl:w-1/6 bg-[#F3F0EC] p-6 hidden md:block overflow-y-auto">
+        <h1 class="text-2xl font-bold text-[#A37F5D] mb-8">Cluster Setup</h1>
+        <nav id="sidebar-nav">
+            <ul>
+                <li><a href="#step1" class="sidebar-item block py-3 px-4 rounded-lg mb-2 transition-colors duration-200">1. Understanding the Goal</a></li>
+                <li><a href="#step2" class="sidebar-item block py-3 px-4 rounded-lg mb-2 transition-colors duration-200">2. Physical Setup</a></li>
+                <li><a href="#step3" class="sidebar-item block py-3 px-4 rounded-lg mb-2 transition-colors duration-200">3. Network Configuration</a></li>
+                <li><a href="#step4" class="sidebar-item block py-3 px-4 rounded-lg mb-2 transition-colors duration-200">4. Passwordless SSH</a></li>
+                <li><a href="#step5" class="sidebar-item block py-3 px-4 rounded-lg mb-2 transition-colors duration-200">5. Install MPI</a></li>
+                <li><a href="#step6" class="sidebar-item block py-3 px-4 rounded-lg mb-2 transition-colors duration-200">6. Shared File System (NFS)</a></li>
+                <li><a href="#step7" class="sidebar-item block py-3 px-4 rounded-lg mb-2 transition-colors duration-200">7. Your First MPI Program</a></li>
+                <li><a href="#step8" class="sidebar-item block py-3 px-4 rounded-lg mb-2 transition-colors duration-200">8. Compile & Run</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main id="main-content" class="w-full md:w-3/4 lg:w-4/5 xl:w-5/6 p-8 lg:p-12 overflow-y-auto">
+        <!-- Content will be injected here by JavaScript -->
+    </main>
+    
+    <script>
+        const steps = {
+            step1: `
+                <h3>1. Understanding the Goal</h3>
+                <p>Welcome! You're about to build what's called a <strong>Beowulf Cluster</strong>. It's a fancy term for a group of regular computers connected together to work as a single, more powerful machine. This is great for scientific research where you need a lot of computing power.</p>
+                <p>To make them work together, we'll use <strong>MPI (Message Passing Interface)</strong>. Think of MPI as a language or a set of rules that the computers use to talk to each other and coordinate their work on a single problem.</p>
+                <div class="note">
+                    <p><strong>Analogy:</strong> Imagine you have a huge, 10,000-piece jigsaw puzzle. Doing it alone would take forever. A cluster is like inviting 5 friends to help. MPI is the set of instructions you give them: "You work on the blue sky," "You work on the red barn," and "Let me know when you connect a piece to the edge."</p>
+                </div>
+                <p>In our setup, one computer will be the "master" (or head node) that hands out the tasks, and the other five will be the "workers" (or compute nodes) that do the heavy lifting.</p>
+            `,
+            step2: `
+                <h3>2. Physical Setup & Naming</h3>
+                <p>First, let's get everything physically connected and decide on a naming scheme. A clear plan now saves a lot of confusion later.</p>
+                <p><strong>Hardware Needed:</strong></p>
+                <ul>
+                    <li>Your 6 computers, all with Ubuntu installed.</li>
+                    <li>An Ethernet switch. An 8-port switch is perfect.</li>
+                    <li>6 Ethernet cables.</li>
+                </ul>
+                <p><strong>Action Plan:</strong></p>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>Decide which computer will be your <strong>master node</strong>. This is the one you'll usually sit at and control the cluster from.</li>
+                    <li>The other 5 computers will be your <strong>worker nodes</strong>.</li>
+                    <li>Plug one end of an Ethernet cable into each of the 6 computers, and the other end into the Ethernet switch.</li>
+                    <li>Power everything on.</li>
+                </ol>
+                <p>Here’s a visual of what you're building:</p>
+                <div class="bg-gray-100 p-6 rounded-lg flex flex-col items-center justify-center border-2 border-gray-200 my-4">
+                    <div class="text-center bg-blue-100 text-blue-800 p-4 rounded-lg shadow-md mb-4 w-48"><strong>Master Node</strong><br>(master)</div>
+                    <div class="h-16 w-1 bg-gray-400"></div>
+                    <div class="w-full max-w-lg h-8 bg-gray-400 rounded-lg flex items-center justify-center text-white font-bold shadow-inner">ETHERNET SWITCH</div>
+                    <div class="flex justify-around w-full max-w-3xl mt-4">
+                        <div class="h-16 w-1 bg-gray-400"></div>
+                        <div class="h-16 w-1 bg-gray-400"></div>
+                        <div class="h-16 w-1 bg-gray-400"></div>
+                        <div class="h-16 w-1 bg-gray-400"></div>
+                        <div class="h-16 w-1 bg-gray-400"></div>
+                    </div>
+                    <div class="flex justify-around w-full max-w-3xl">
+                        <div class="text-center bg-green-100 text-green-800 p-2 rounded-lg shadow-md w-24"><strong>Worker 1</strong><br>(node01)</div>
+                        <div class="text-center bg-green-100 text-green-800 p-2 rounded-lg shadow-md w-24"><strong>Worker 2</strong><br>(node02)</div>
+                        <div class="text-center bg-green-100 text-green-800 p-2 rounded-lg shadow-md w-24"><strong>Worker 3</strong><br>(node03)</div>
+                        <div class="text-center bg-green-100 text-green-800 p-2 rounded-lg shadow-md w-24"><strong>Worker 4</strong><br>(node04)</div>
+                        <div class="text-center bg-green-100 text-green-800 p-2 rounded-lg shadow-md w-24"><strong>Worker 5</strong><br>(node05)</div>
+                    </div>
+                </div>
+            `,
+            step3: `
+                <h3>3. Network Configuration (The Most Important Step!)</h3>
+                <p>We need to give each computer a permanent, private address (a static IP) so they can always find each other. We also need to teach them each other's names.</p>
+                <p><strong>Do these steps on ALL 6 computers.</strong> The only thing that will change on each computer is the IP address and hostname you set.</p>
+                <ol class="list-decimal list-inside space-y-4">
+                    <li><strong>Set Hostnames:</strong> Give each computer a unique name.
+                        <br>On the master node, open a terminal (Ctrl+Alt+T) and run:
+                        <div class="code-block">sudo hostnamectl set-hostname master</div>
+                        On the first worker, run: <code>sudo hostnamectl set-hostname node01</code>, on the second: <code>sudo hostnamectl set-hostname node02</code>, and so on up to <code>node05</code>. You'll need to reboot for this to take full effect.
+                    </li>
+                    <li>
+                        <strong>Set Static IPs:</strong> We'll use Ubuntu's Netplan. Open the configuration file in a terminal text editor called nano:
+                        <div class="code-block">sudo nano /etc/netplan/01-network-manager-all.yaml</div>
+                        Make the file look exactly like the example below. <strong>Pay attention to the spacing, it's very important!</strong> Change the IP address for each machine according to our plan.
+                        <p class="mt-2"><strong>Our IP Plan:</strong></p>
+                        <ul class="list-none bg-gray-100 p-2 rounded">
+                            <li>master: <code>192.168.1.100</code></li>
+                            <li>node01: <code>192.168.1.101</code></li>
+                            <li>node02: <code>192.168.1.102</code></li>
+                            <li>...and so on up to <code>192.168.1.105</code> for node05.</li>
+                        </ul>
+                        <p class="mt-2">Here is the template for the file. Replace <code>192.168.1.XXX</code> with the correct IP for the machine you are on.</p>
+                        <div class="code-block">
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp0s3: # YOUR INTERFACE NAME MIGHT BE DIFFERENT! Check with 'ip a' command
+      dhcp4: no
+      addresses:
+        - 192.168.1.XXX/24
+      gateway4: 192.168.1.1
+      nameservers:
+        addresses: [8.8.8.8, 8.8.4.4]
+                        </div>
+                        <p class="note">Press <code>Ctrl+X</code>, then <code>Y</code>, then <code>Enter</code> to save and exit nano. Then, apply the changes with: <code>sudo netplan apply</code></p>
+                    </li>
+                    <li><strong>Teach Them Names (Edit /etc/hosts):</strong> This file acts like a phonebook for the computers.
+                        <br>On <strong>ALL 6 COMPUTERS</strong>, edit the hosts file:
+                        <div class="code-block">sudo nano /etc/hosts</div>
+                        Add the following lines to the end of the file. The file should contain this block on every single machine.
+                        <div class="code-block">
+192.168.1.100 master
+192.168.1.101 node01
+192.168.1.102 node02
+192.168.1.103 node03
+192.168.1.104 node04
+192.168.1.105 node05
+                        </div>
+                    </li>
+                    <li>
+                        <strong>Test it!</strong> From your master node, open a terminal and type <code>ping node01</code>. You should see replies. Press <code>Ctrl+C</code> to stop. If it works, your network is set up!
+                    </li>
+                </ol>
+            `,
+            step4: `
+                <h3>4. Passwordless SSH: Giving the Master Control</h3>
+                <p>For the master node to start jobs on the worker nodes, it needs to be able to log in to them without you typing a password every time. We do this with SSH keys.</p>
+                <div class="note">
+                    <p><strong>Analogy:</strong> This is like giving your master node a master key that unlocks all the worker nodes. It's secure because only the master has this specific key.</p>
+                </div>
+                <p><strong>On the MASTER node only:</strong></p>
+                <ol class="list-decimal list-inside space-y-4">
+                    <li><strong>Generate a key pair:</strong> Open a terminal on the master and run this command. Just press Enter three times to accept the defaults.
+                        <div class="code-block">ssh-keygen -t rsa</div>
+                    </li>
+                    <li>
+                        <strong>Copy the key to EACH worker:</strong> Now, we'll copy the public part of the key to each worker node. You will be asked for the worker's password each time. This is the last time you'll need it!
+                        <p class="mt-2">Run these commands from the master node's terminal:</p>
+                        <div class="code-block">
+ssh-copy-id your_username@node01
+ssh-copy-id your_username@node02
+ssh-copy-id your_username@node03
+ssh-copy-id your_username@node04
+ssh-copy-id your_username@node05
+                        </div>
+                        <p class="note">Replace <code>your_username</code> with your actual username on the machines. It's best if it's the same on all of them.</p>
+                    </li>
+                    <li><strong>Test it!</strong> From the master, try to log in to a worker:
+                        <div class="code-block">ssh node01</div>
+                        It should log you in instantly without asking for a password! Type <code>exit</code> to come back to the master. Repeat for another node to be sure.
+                    </li>
+                </ol>
+            `,
+            step5: `
+                <h3>5. Install MPI</h3>
+                <p>Now we install the actual MPI software that lets the computers talk to each other. We'll use a popular version called Open MPI.</p>
+                <p><strong>Do this on ALL 6 computers (master and all workers).</strong> It's important that they all have the exact same version.</p>
+                <p>Open a terminal on each machine and run these two commands:</p>
+                <div class="code-block">
+sudo apt update
+sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
+                </div>
+                <p>That's it for this step! Once the installation is finished on all machines, you're ready to set up the shared folder.</p>
+            `,
+            step6: `
+                <h3>6. Shared File System (NFS): A Common Workspace</h3>
+                <p>When you run a program, all the worker nodes need to be able to see the program's file and any data it needs. We'll create a shared folder on the master node and make it accessible to all the workers using NFS (Network File System).</p>
+                
+                <p><strong>Part 1: On the MASTER node:</strong></p>
+                <ol class="list-decimal list-inside space-y-4">
+                    <li>Install the NFS server software:
+                        <div class="code-block">sudo apt install -y nfs-kernel-server</div>
+                    </li>
+                    <li>Create the folder we are going to share. We'll put it in your home directory.
+                        <div class="code-block">mkdir -p ~/shared_folder</div>
+                    </li>
+                    <li>Tell the NFS server which folder to share and who to share it with.
+                        <div class="code-block">sudo nano /etc/exports</div>
+                        Add this single line to the very end of the file. It tells the server to share your folder with every computer on your <code>192.168.1.0</code> network.
+                        <div class="code-block">/home/your_username/shared_folder 192.168.1.0/24(rw,sync,no_subtree_check)</div>
+                         <p class="note">Remember to replace <code>your_username</code>! Save and exit with <code>Ctrl+X</code>, <code>Y</code>, <code>Enter</code>.</p>
+                    </li>
+                     <li>Activate the changes:
+                        <div class="code-block">sudo exportfs -a
+sudo systemctl restart nfs-kernel-server</div>
+                    </li>
+                </ol>
+
+                <p class="mt-6"><strong>Part 2: On ALL 5 WORKER nodes:</strong></p>
+                <ol class="list-decimal list-inside space-y-4">
+                    <li>Install the NFS client software:
+                        <div class="code-block">sudo apt install -y nfs-common</div>
+                    </li>
+                    <li>Create the same folder on the workers. This will be the "mount point".
+                        <div class="code-block">mkdir -p ~/shared_folder</div>
+                    </li>
+                    <li>Tell the workers to automatically connect to the master's shared folder.
+                        <div class="code-block">sudo nano /etc/fstab</div>
+                        Add this single line to the end of the file. It tells the worker to mount the folder from the master.
+                        <div class="code-block">master:/home/your_username/shared_folder /home/your_username/shared_folder nfs defaults 0 0</div>
+                        <p class="note">Again, replace <code>your_username</code>! Save and exit.</p>
+                    </li>
+                    <li>Mount the folder now:
+                        <div class="code-block">sudo mount -a</div>
+                    </li>
+                </ol>
+
+                <p class="mt-6"><strong>Final Test:</strong> On your <strong>master</strong> node, create a test file: <code>touch ~/shared_folder/test.txt</code>. Now, go to any <strong>worker</strong> node and list the files in its shared folder: <code>ls ~/shared_folder</code>. You should see <code>test.txt</code>! If you do, it's working perfectly.</p>
+            `,
+            step7: `
+                <h3>7. Your First MPI Program</h3>
+                <p>Let's write a simple "Hello World" program in the C language to test our cluster. This program will have each part of the cluster (each process) report in with its ID number.</p>
+                <p><strong>On the MASTER node only</strong>, navigate into your new shared folder:</p>
+                <div class="code-block">cd ~/shared_folder</div>
+                <p>Now, create a new file for our program:</p>
+                <div class="code-block">nano mpi_hello.c</div>
+                <p>Copy and paste the following code into the nano editor. Don't worry if you don't understand it all; the comments explain the basics.</p>
+                <div class="code-block" id="c-code">
+#include <mpi.h>
+#include <stdio.h>
+
+int main(int argc, char** argv) {
+    // Initialize the MPI environment
+    MPI_Init(NULL, NULL);
+
+    // Get the number of processes
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+    // Get the rank of the process
+    int world_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    // Get the name of the processor
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int name_len;
+    MPI_Get_processor_name(processor_name, &name_len);
+
+    // Print off a hello world message
+    printf("Hello from processor %s, rank %d out of %d processors\\n",
+           processor_name, world_rank, world_size);
+
+    // Finalize the MPI environment.
+    MPI_Finalize();
+}
+                </div>
+                <p>Save and exit the file (<code>Ctrl+X</code>, <code>Y</code>, <code>Enter</code>).</p>
+                <p>Because we created this file in the shared folder, all the worker nodes can now see it instantly!</p>
+            `,
+            step8: `
+                <h3>8. Compile & Run: The Final Moment!</h3>
+                <p>We're ready to compile our program and run it on the cluster.</p>
+                <p><strong>On the MASTER node only</strong>, make sure you are still in the shared folder (<code>cd ~/shared_folder</code>).</p>
+                <ol class="list-decimal list-inside space-y-4">
+                    <li><strong>Compile the code:</strong> We use a special MPI compiler command called <code>mpicc</code>.
+                        <div class="code-block">mpicc -o mpi_hello mpi_hello.c</div>
+                        This takes our C code (<code>mpi_hello.c</code>) and creates an executable program file named <code>mpi_hello</code>.
+                    </li>
+                    <li><strong>Create a hostfile:</strong> This file tells MPI which computers are part of our cluster.
+                        <div class="code-block">nano hostfile</div>
+                        Add the names of all your worker nodes to this file, one per line:
+                        <div class="code-block">
+node01
+node02
+node03
+node04
+node05
+                        </div>
+                        <p class="note">We don't usually include the master in this file, as it's busy managing the work. Save and exit.</p>
+                    </li>
+                    <li><strong>Run the program!</strong> This is the final command. We'll use <code>mpirun</code>.
+                        <ul class="list-none my-2">
+                           <li><code>-np 10</code>: tells MPI to run 10 total processes.</li>
+                           <li><code>--hostfile hostfile</code>: tells MPI where to find the list of available computers.</li>
+                           <li><code>./mpi_hello</code>: is the program we want to run.</li>
+                        </ul>
+                        <div class="code-block">mpirun -np 10 --hostfile hostfile ./mpi_hello</div>
+                    </li>
+                </ol>
+                <h4 class="text-xl font-bold mt-6 mb-2 text-[#A37F5D]">Expected Output</h4>
+                <p>You should see 10 lines of output, in a somewhat random order, as the different processes on your worker nodes finish and report back. It will look something like this:</p>
+                <div class="code-block">
+Hello from processor node03, rank 4 out of 10 processors
+Hello from processor node01, rank 0 out of 10 processors
+Hello from processor node05, rank 9 out of 10 processors
+Hello from processor node02, rank 2 out of 10 processors
+Hello from processor node04, rank 7 out of 10 processors
+Hello from processor node01, rank 1 out of 10 processors
+Hello from processor node03, rank 5 out of 10 processors
+Hello from processor node02, rank 3 out of 10 processors
+Hello from processor node04, rank 8 out of 10 processors
+Hello from processor node03, rank 6 out of 10 processors
+                </div>
+                <p class="mt-4 text-xl font-bold text-green-700">If you see output like this, CONGRATULATIONS! You have successfully built and run a program on your own MPI computer cluster!</p>
+            `,
+        };
+
+        const mainContent = document.getElementById('main-content');
+        const sidebarNav = document.getElementById('sidebar-nav');
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+
+        function updateContent(hash) {
+            const stepId = hash ? hash.substring(1) : 'step1';
+            if (steps[stepId]) {
+                mainContent.innerHTML = steps[stepId];
+                addCopyButtonListeners();
+                updateActiveSidebar(stepId);
+            }
+        }
+        
+        function updateActiveSidebar(activeId) {
+            sidebarItems.forEach(item => {
+                if (item.getAttribute('href') === `#${activeId}`) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        function addCopyButtonListeners() {
+            const codeBlocks = mainContent.querySelectorAll('.code-block');
+            codeBlocks.forEach(block => {
+                const btn = document.createElement('button');
+                btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                btn.className = 'copy-btn';
+                btn.addEventListener('click', () => {
+                    const code = block.innerText;
+                    // Remove the "Copy" text from the end if present
+                    const textToCopy = code.endsWith('Copy') ? code.slice(0, -4).trim() : code;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                        setTimeout(() => {
+                           btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                        }, 2000);
+                    });
+                });
+                block.appendChild(btn);
+            });
+        }
+
+        sidebarNav.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') {
+                const hash = e.target.hash;
+                history.pushState(null, '', hash);
+                updateContent(hash);
+            }
+        });
+
+        window.addEventListener('popstate', () => {
+            updateContent(window.location.hash);
+        });
+
+        // Initial load
+        updateContent(window.location.hash || '#step1');
+        if (!window.location.hash) {
+            window.location.hash = '#step1';
+        }
+
+    </script>
+</body>
+</html>
