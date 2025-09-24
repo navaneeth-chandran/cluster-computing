@@ -175,11 +175,13 @@ network:
       dhcp4: no
       addresses:
         - 192.168.1.XXX/24
-      gateway4: 192.168.1.1
+      routes:
+        - to: default
+          via: 192.168.1.1
       nameservers:
         addresses: [8.8.8.8, 8.8.4.4]
                         </div>
-                        <p class="note">Press <code>Ctrl+X</code>, then <code>Y</code>, then <code>Enter</code> to save and exit nano. Then, apply the changes with: <code>sudo netplan apply</code></p>
+                        <p class="note">Press <code>Ctrl+X</code>, then <code>Y</code>, then <code>Enter</code> to save and exit nano. If they say permission is too open, then use the comand "sudo chmod 600 /etc/netplan/01-network-manager-all.yaml" this Sets permissions to 600 = rw-------. means only owner can read and write after that type in ls -l /etc/netplan  Then, apply the changes with: <code>sudo netplan apply</code></p>
                     </li>
                     <li><strong>Teach Them Names (Edit /etc/hosts):</strong> This file acts like a phonebook for the computers.
                         <br>On <strong>ALL 6 COMPUTERS</strong>, edit the hosts file:
@@ -437,3 +439,4 @@ Hello from processor node03, rank 6 out of 10 processors
     </script>
 </body>
 </html>
+
